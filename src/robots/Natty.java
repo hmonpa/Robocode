@@ -4,7 +4,9 @@
  * and open the template in the editor.
  */
 package robots;
+import java.awt.Color;
 import robocode.*;
+import robocode.util.Utils;
 /**
  *
  * @author hector
@@ -12,18 +14,29 @@ import robocode.*;
 public class Natty extends AdvancedRobot
 {
     public void run() {
+        setBodyColor(Color.BLACK);                              // Natty customizado
+        setGunColor(Color.YELLOW);
+        setRadarColor(Color.BLACK);
+        
         turnLeft(getHeading());
+        setTurnRadarRight(Double.POSITIVE_INFINITY);
+        setAdjustGunForRobotTurn(true);
+        setAdjustRadarForRobotTurn(true);
+        
         while(true) {
-            setTurnRight(10000);
+            setAdjustRadarForRobotTurn(true);
             setTurnGunRight(90);
-            setAhead(2000);
+            setAhead(500);                                      // Movimiento de Natty 2000 píxeles
+            setTurnRight(90);                                   // Giro de Natty a la derecha en el píxel 10000
+            setTurnGunRight(270);
             execute();
         }
     }
     public void onScannedRobot(ScannedRobotEvent e) {
-        fire(1);
+        setFire(Rules.MAX_BULLET_POWER);
     }
+    
     public void onHitByBullet(HitByBulletEvent e) {
-        turnLeft(180);
+        //turnLeft(180);
     }
 }
