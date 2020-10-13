@@ -13,13 +13,13 @@ import robocode.util.Utils;
  */
 public class Natty extends AdvancedRobot
 {
-    public void run() {
+    public void run(){
         setBodyColor(Color.BLACK);                              // Natty customizado
         setGunColor(Color.YELLOW);
         setRadarColor(Color.BLACK);
         
         turnLeft(getHeading());
-        setTurnRadarRight(Double.POSITIVE_INFINITY);
+        //setTurnRadarRight(Double.POSITIVE_INFINITY);
         setAdjustGunForRobotTurn(true);
         setAdjustRadarForRobotTurn(true);
         
@@ -33,7 +33,8 @@ public class Natty extends AdvancedRobot
         }
     }
     public void onScannedRobot(ScannedRobotEvent e) {
-        setFire(Rules.MAX_BULLET_POWER);
+        //setFire(Rules.MIN_BULLET_POWER);
+        setFire(3);
     }
     
     public void onHitByBullet(HitByBulletEvent e) {
