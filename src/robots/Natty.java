@@ -72,12 +72,13 @@ public class Natty extends AdvancedRobot
             fire(3);
         }
         setAhead(e.getDistance()-200);
-        if (e.getEnergy() > 20){                                                        // Si Natty tiene más de un 20% de energia
+        if (e.getEnergy() > 20){                             // Si Natty tiene más de un 20% de energia
             setFire(Rules.MAX_BULLET_POWER);                 // Sólo dispara cuando el enemigo está cerca (a menos de 200 píxeles)
         }
-        else {                                                                          // Por el contrario, si está a punto de morir
+        else {                                               // Por el contrario, si está a punto de morir
             if (e.getDistance() < 100) setFire(Rules.MAX_BULLET_POWER);                 // Sólo dispara cuando el enemigo está muy cerca, para no perder vida en disparos
         }
+        
         double direction = e.getBearingRadians()+getHeadingRadians();                   // direction = Grados respecto al enemigo + orientación de Natty
         double move = e.getVelocity()+Math.sin(e.getHeadingRadians()+direction);        // move = Velocidad de Natty + seno(Orientación de Natty + direction)
         //setTurnRadarLeftRadians(getRadarTurnRemainingRadians());                        // El radar gira a la izq. los grados restantes del giro del radar

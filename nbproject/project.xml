@@ -11,5 +11,11 @@
                 <root id="test.src.dir"/>
             </test-roots>
         </data>
+<<<<<<< HEAD
+=======
+        <libraries xmlns="http://www.netbeans.org/ns/ant-project-libraries/1">
+            <definitions>/home/hector/robocode/libs/nblibraries.properties</definitions>
+        </libraries>
+>>>>>>> 2a194e9a537e3a6479dbe9aba674529a97c35c03
     </configuration>
 </project>
