@@ -6,8 +6,4 @@ build/
 nbbuild/
 dist/
 nbdist/
-<<<<<<< HEAD
 .nb-gradle/
-=======
-.nb-gradle/
->>>>>>> 2a194e9a537e3a6479dbe9aba674529a97c35c03
