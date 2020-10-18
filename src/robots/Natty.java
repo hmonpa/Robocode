@@ -7,14 +7,26 @@ package robots;
 import java.awt.Color;
 import robocode.*;
 import robocode.util.Utils;
+import java.awt.geom.*;
 /**
  *
  * @author hector
  */
 public class Natty extends AdvancedRobot
 {
+    
+    // ATRIBUTOS
+    
     private int dir = 1;
+    int gunDirection = 1;
+    double energiaPrevia = 100;
     private double marg = 20;
+    
+    
+  
+    
+    // FUNCIONES
+    
     private double apuntar(ScannedRobotEvent e){
         double angulo = e.getBearing() + getHeading();
         return angulo - getRadarHeading();
@@ -40,34 +52,41 @@ public class Natty extends AdvancedRobot
     }
     
     public void run(){
+        
+        // CONFIGURACIONES DE COLOR
+        
         setBodyColor(Color.RED);                              // Natty customizado (Librería Utils de Robocode)
         setRadarColor(Color.RED);
         setGunColor(Color.YELLOW);
         setBulletColor(Color.YELLOW);
      
+        
+        // INICIALIZAIONES 
+        
         setTurnRadarRight(Double.POSITIVE_INFINITY);            // Gira el radar a la derecha por grados en la próxima ejecución
         setAdjustGunForRobotTurn(true);                         // El cañón permanece en la misma dirección mientras Natty gira
         execute();
         setAdjustRadarForRobotTurn(true);                       // El radar permanece en la misma dirección mientras Natty gira 
         //setTurnGunRight(270);
         
+        /// BUCLE MIENTRAS NO RECIBE EVENTOS...
         while(true) {
-            //setTurnGunRight(90);
-            //setAhead(2000);                                      // Movimiento de Natty 2000 píxeles
-            //setTurnRight(200);                                    // Giro de Natty a la derecha en el píxel 10000
-            //setTurnGunRight(10);
+            movimientoBase();           // El robot hace un movimiento base independiente del enemigo
             scan();                                               // Escanea buscando enemigos mientras se mueve
             execute();                                            // Ejecuta
         }
     }
     
-    @Override
     public void onScannedRobot(ScannedRobotEvent e) {
         /*El radar dara giros de 360 grados en todo momento, en el momento que detecte al tanque enemigo, 
         se quedara comprobando ese segmento ( 90 grados), mientras siga detectando al tanque enemigo. 
         Si pasan un par de segundos sin detectar al robot, vuelve a dar giros de 360 grados.*/
         //double angleRadar = e.getBearing() + getHeading();
         //return angleRad
+        
+        
+        /////////////////////////////// PARTE DE DETECCION ( HECTOR )  
+
         if (e.getName().toLowerCase().contains("Torre".toLowerCase())){
             fire(3);
         }
@@ -91,16 +110,44 @@ public class Natty extends AdvancedRobot
         setTurnGunRightRadians(gunmove);
         
         setTurnRightRadians(robocode.util.Utils.normalRelativeAngle(direction-getHeadingRadians()+(move/getVelocity())));
+
+             
+        //////////////////////// MOVIMIENTO PARA ESQUIVAR BALAS
+        
+        esquivar(e);
        
-    }
+  }
     
+    // Esquiva las balas enemigas
+    public void esquivar(ScannedRobotEvent e) { 
+        
+        double diferenciaEnergia = energiaPrevia-e.getEnergy();
+        // Si la energia del robot ha canviado menos de 3 significa que ha disparado
+        if (diferenciaEnergia>0 && diferenciaEnergia<=3) {
+         // Esquivamos
+         dir = -dir;
+         ahead((e.getDistance()/4+25)*dir);
+        }
+    
+         // Guardamos el nivel actual de energia del rival
+         energiaPrevia = e.getEnergy();     
+    }
+        
+    // Movimiento base del robot
+    public void movimientoBase() { 
+        if (getTime()%20 == 0)  { 		//every twenty 'ticks'.  The % operator is a modulus.
+            dir *= -1;		//reverse direction
+            setAhead(dir*300);	//move in that direction
+        }
+       
+}
+     
+    
+    
+    // Cuando el tanque se choca con la pared...
     public void onHitWall(HitWallEvent e){
         dir = -dir;
         setTurnRight(direccion(getBattleFieldWidth()/2, getBattleFieldHeight()/2));
         setBack(150*dir);
-    }
-    
-    public void onHitBullet(HitByBulletEvent e){
-        setAhead(100 * -dir);
     }
 }
