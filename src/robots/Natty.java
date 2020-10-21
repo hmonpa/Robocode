@@ -4,62 +4,172 @@
  * and open the template in the editor.
  */
 package robots;
-import java.awt.Color;
 import robocode.*;
 import robocode.util.Utils;
+import java.awt.geom.*; 
+import java.awt.Color;
+
 /**
- *
- * @author hector
+ * Robot creado para la asignatura PROP 2020-2021.
+ * @author Hector Montesinos y Kilian Roig
  */
+
 public class Natty extends AdvancedRobot
 {
+    
+    // Variables globales
+    private int dir = 1;
+    private static double antDirEnemigo;
+    private static double vidaEnemigo;
+    private double direction;
+    private double move;
+    private double prediccionX;
+    private double prediccionY;
+    // Constante
+    final static double BULLET_VELOCITY = 20-3*Rules.MAX_BULLET_POWER;
+    
+    ///////////////////////////    Métodos    ///////////////////////////
+    
+    /**
+     * Metodo que se ejecuta al empezar el juego.
+     */
     public void run(){
-        setBodyColor(Color.RED);                              // Natty customizado (Librería Utils de Robocode)
-        setRadarColor(Color.RED);
-        setGunColor(Color.YELLOW);
-        setBulletColor(Color.YELLOW);
-     
-        //turnLeft(getHeading());
-        setTurnRadarRight(Double.POSITIVE_INFINITY);            // Gira el radar a la derecha por grados en la próxima ejecución
-        setAdjustGunForRobotTurn(true);                         // El cañón permanece en la misma dirección mientras Natty gira
-        setAdjustRadarForRobotTurn(true);                       // El radar permanece en la misma dirección mientras Natty gira 
-        //setTurnRadarRight(270);
+        
+        // Cambiamos look de Natty
+        nattyConEstilo();
+        
+        // Inicializaciones
+        setTurnRadarRightRadians(Double.POSITIVE_INFINITY);             // Gira el radar a la derecha por grados en la próxima ejecución
+        setAdjustGunForRobotTurn(true);                                 // El cañón permanece en la misma dirección mientras Natty gira
+        setAdjustRadarForGunTurn(true);                                 // El radar permanece en la misma dirección mientras Natty gira 
         
         while(true) {
-            //setTurnGunRight(90);
-            //setAhead(500);                                      // Movimiento de Natty 2000 píxeles
-            //setTurnRight(90);                                   // Giro de Natty a la derecha en el píxel 10000
-            //setTurnGunRight(270);
-            scan();                                               // Escanea buscando enemigos mientras se mueve
-            execute();                                            // Ejecuta
+            scan();                     // Escanea buscando enemigos mientras se mueve
+            execute();                  // Ejecuta
         }
     }
-    public void onScannedRobot(ScannedRobotEvent e) {
-        double direction = e.getBearingRadians()+getHeadingRadians();                   // direction = Grados respecto al enemigo + orientación de Natty
-        double move = e.getVelocity()+Math.sin(e.getHeadingRadians()+direction);        // move = Velocidad de Natty + seno(Orientación de Natty + direction)
-        setTurnRadarLeftRadians(getRadarTurnRemainingRadians());                        // El radar gira a la izq. los grados restantes del giro del radar
+    
+    /**
+     * Método que es llamado cuando escaneamos un robot enemigo.
+     * @param e Permite obtener informacion del robot enemigo.
+     */
+    public void onScannedRobot(ScannedRobotEvent e) {        
+        // AnalizaSituacion
+        analizaSituacion(e);
+        // Calcula donde disparar a partir del metodo CircularTarget
+        circularTarget(e);
+        // Mueve el cañon y el radar a partir dela prediccion hecha anteriormente y dispara
+        apuntarYDisparar(e);
+    }
+ 
+    /**
+     * Método que es llamado cuando chocamos con una pared.
+     * @param e Permite obtener informacion de la pared donde hemos chocado.
+     */
+    public void onHitWall(HitWallEvent e){
+        dir = -dir;
+        setBack(150*dir);
+    }
+    
+    /**
+     * Método que es llamado cuando recibimos un disparo
+     * @param e Permite obtener informacion del disparo recibido
+     */
+    public void onHitByBullet(HitByBulletEvent e){
+        setAhead(100*-dir);
+    }
+    
+    /**
+     * Metodo que es llamado cuando golpeamos a un enemigo
+     * @param e Permite obtener informacion del impacto al enemigo
+     */
+    public void onBulletHit(BulletHitEvent e){
+        vidaEnemigo-=Rules.MAX_BULLET_POWER*4;
+    }
 
-        setAhead(e.getDistance()-200);                                                  // Natty se mueve
+    /**
+     * Método que analiza la situacion del enemigo para reajustar la orientación, velocidad y movimiento de radar y cañón
+     * @param e Permite obtener informacón del enemigo
+     */
+    public void analizaSituacion(ScannedRobotEvent e) { 
+        // Grados respecto al enemigo + orientación de Natty
+        direction = e.getBearingRadians()+getHeadingRadians();  
         
-        double gunmove = robocode.util.Utils.normalRelativeAngle(direction-getGunHeadingRadians()+(move/10));   
-        // la función normaliza el ángulo a ángulo relativo, del cálculo de direction+move/10+orientación del cañón en grados
-        setTurnGunRightRadians(gunmove);
+        // Velocidad de Natty + seno(Orientación del enemigo + direction)
+        move = e.getVelocity()+Math.sin(e.getHeadingRadians()+direction);        
         
-        setTurnRightRadians(robocode.util.Utils.normalRelativeAngle(direction-getHeadingRadians()+(move/getVelocity())));
+        // El cañón gira a la derecha en la próx ejecución, el ángulo relativo de move - orientación de Natty
+        setTurnGunRightRadians(Utils.normalRelativeAngle(move-getHeadingRadians()));
         
-        if (e.getEnergy() > 20){                                                        // Si Natty tiene más de un 20% de energia
-            if (e.getDistance() < 200) setFire(Rules.MAX_BULLET_POWER);                 // Sólo dispara cuando el enemigo está cerca (a menos de 200 píxeles)
-        }
-        else {                                                                          // Por el contrario, si está a punto de morir
-            if (e.getDistance() < 100) setFire(Rules.MAX_BULLET_POWER);                 // Sólo dispara cuando el enemigo está muy cerca, para no perder vida en disparos
+        // El radar gira a la izquierda en la próx ejecución, el ángulo restante en el giro del radar
+        setTurnRadarLeftRadians(getRadarTurnRemainingRadians());                        
+       
+        // Máxima velocidad de Natty (píxeles/giros)
+        setMaxVelocity(Rules.MAX_VELOCITY/getTurnRemaining());
+        
+        // Natty se mueve
+        setAhead(100*dir);
+    } 
+    
+    /**
+     * Método que calcula donde disparar a partir de la posicion del enemigo utilizando una politica de target circular.
+     * @param e Permite obtener información del enemigo.
+     */
+    public void circularTarget(ScannedRobotEvent e) { 
+        // Estrategia utilizada
+        double dirEnemigo = e.getHeadingRadians();
+        double cambioDirEnemigo = dirEnemigo - antDirEnemigo;
+        antDirEnemigo = dirEnemigo;
+        
+        // Primeras predicciones
+        prediccionX = getX()+e.getDistance()*Math.sin(direction);
+        prediccionY = getY()+e.getDistance()*Math.cos(direction);
+        double tiempoPred = 0;
+        // Mientras el tiempo que tarda la bala en llegar al enemigo, no sea superior al tiempo que necesita para llegar desde la posicion
+        // actual hasta la posición predecida del tanque enemigo, seguimos haciendo predicciones
+        while(Point2D.Double.distance(getX(), getY(), prediccionX, prediccionY) > (tiempoPred++)*BULLET_VELOCITY){
+            // (static double) Returns the distance between two points (x1, y1, x2, y2)
+            // Hacemos una predicción del eje X apartir de la direccion del enemigo y su velocidad
+            prediccionX += e.getVelocity()*Math.sin(dirEnemigo);
+            // Hacemos una predicción del eje Y apartir de la direccion del enemigo y su velocidad
+            prediccionY += e.getVelocity()*Math.cos(dirEnemigo);
+            
+            dirEnemigo += cambioDirEnemigo;
+            
+            // Modificamos las predicciones X e Y en caso de que estemos en los bordes del mapa (no tiene sentido disparar
+            // a un lugar al que el tanque enemigo no puede llegar)
+            prediccionX=Math.max(Math.min(prediccionX,getBattleFieldWidth()-18),18);
+            prediccionY=Math.max(Math.min(prediccionY,getBattleFieldHeight()-18),18);
         }
     }
     
-    /*public void onHitWall(HitWallEvent e){
-        setAhead(-1);
+        /**
+     * Método que permite al tanque apuntar al lugar donde creemos que estara el tanque enemigo y disparar
+     * @param e Permite obtener informacion del enemigo
+     */
+    public void apuntarYDisparar(ScannedRobotEvent e) { 
+        // Obtención del ángulo absoluto mediante coordenadas x e y predecidas
+        double angulo = Utils.normalAbsoluteAngle(Math.atan2(prediccionX - getX(), prediccionY - getY()));
+        // Obtención del ángulo relativo del cañón (Gun) 
+        double angulocañon = Utils.normalRelativeAngle(angulo - getGunHeadingRadians());
+        setTurnGunRightRadians(angulocañon);
+        
+        // Natty dispara
+        if (getEnergy()>20) setFire(Rules.MAX_BULLET_POWER);
+        else if (e.getDistance() < 100) setFire(Rules.MIN_BULLET_POWER);
+        
+        // Obtención del ángulo relativo del radar
+        double anguloradar = Utils.normalRelativeAngle(direction-getRadarHeadingRadians());
+        setTurnRadarRightRadians(anguloradar);
     }
     
-    public void onHitBullet(HitBulletEvent e){
-        setAhead(-1);
-    }*/
+    /**
+     * Método que viste a Natty bien guapo.
+     */
+    public void nattyConEstilo() {
+        setBodyColor(Color.WHITE);                                       
+        setRadarColor(Color.WHITE);
+        setGunColor(Color.WHITE);
+        setBulletColor(Color.WHITE);
+    }
 }
